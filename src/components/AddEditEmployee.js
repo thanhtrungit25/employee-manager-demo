@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useDispatch } from 'react-redux';
 import { useForm, Controller } from 'react-hook-form'
 import { makeStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
@@ -10,9 +11,9 @@ import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import FormLabel from '@material-ui/core/FormLabel';
-
 import FormTextField from './TextField';
 import EmployeeService from '../services/EmployeeService';
+import { addNewEmployee, updateEmployee } from '../features/employee/employeeSlice';
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -64,6 +65,7 @@ const validate = (value) => {
 };
 
 export default function AddEmployee({ history, match }) {
+  const dispatch = useDispatch()
   const classes = useStyles();
   const { id } = match.params
   const isAddMode = !id;
@@ -82,33 +84,34 @@ export default function AddEmployee({ history, match }) {
 
   const onSubmit = (data) => {
     return isAddMode
-      ? addEmployee(data)
-      : updateEmployee(id, data)
+      ? add(data)
+      : update(id, data)
   }
 
-  const addEmployee = (data) => {
-    setSubmitted(true)
-    EmployeeService.create(data)
-      .then(response => {
-        console.log(response.data);
-        if (response.data.id) {
-          setSubmitted(false)
-          history.push('/')
-        }
-      })
-      .catch(e => {
-        console.log(e);
-      });
+  const add = async (data) => {
+    try {
+      setSubmitted(true)
+      await dispatch(addNewEmployee({ ...data })).unwrap()
+      history.push('/')
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setSubmitted(false)
+    }
   }
 
-  const updateEmployee = (id, data) => {
-    return EmployeeService.update(id, data)
-      .then(() => {
-        history.push('/')
-      })
-      .catch(e => {
-        console.log(e);
-      });
+  const update = async (id, data) => {
+    console.log('update', id, data)
+    try {
+      setSubmitted(true)
+      await dispatch(updateEmployee({ id, ...data })).unwrap()
+      history.push('/')
+    } catch (e) {
+      console.log(e);
+      return
+    } finally {
+      setSubmitted(false)
+    }
   }
 
   return (
@@ -176,7 +179,6 @@ export default function AddEmployee({ history, match }) {
               </FormControl>
             )}
           >
-
           </Controller>
           <Button
             type="submit"
